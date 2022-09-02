@@ -4,7 +4,7 @@ from game import Game
 if __name__ == '__main__':
     logging.basicConfig()
 
-    game = Game("test.grid")
+    game = Game("test2.grid")
 
     #agent = A2CAgent(game)
     agent = PPOAgent(game)
