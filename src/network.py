@@ -5,7 +5,7 @@ import pickle
 import wx
 import asyncore
 import time as t
-from game import TTGame
+from game import Game
 from Queue import Queue
 from debug import log
 from renderer import SpriteGroup
@@ -58,19 +58,19 @@ class GameProxy(object):
         return [(p.statement, p.data) for p in self.proxies]
 
 
-class TTNetGame(TTGame):
+class NetGame(Game):
     def __init__(self, dispatcher, i):
         log("initialising network game")
         self.dispatcher = dispatcher
         self.i = i
         self.networkEvents = Queue()
-        super(TTNetGame, self).__init__()
+        super(NetGame, self).__init__()
 
     def handleNetworkEvent(self, e):
         self.networkEvents.put(e)
     
     def processDataStreams(self):
-        super(TTNetGame, self).processDataStreams()
+        super(NetGame, self).processDataStreams()
         
         while not self.networkEvents.empty():
             e = self.networkEvents.get()            
@@ -92,7 +92,7 @@ class TTNetGame(TTGame):
             self.avatars.add(avatar)
     
     def update(self):
-        super(TTNetGame, self).update()
+        super(NetGame, self).update()
         # send out remote statements
         proxy = GameProxy()
         proxy.avatars.sprites()[self.i].setState(self.avatar.getState())
@@ -113,7 +113,7 @@ class GameServer(asyncore.dispatcher):
         self.connections = []
         self.listen(1)
         # create actual game
-        self.game = TTNetGame(self, 0)    
+        self.game = NetGame(self, 0)
     
     def handle_accept(self):        
         pair = self.accept()
@@ -173,7 +173,7 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 
 class GameClient(asyncore.dispatcher):  
     def __init__(self, server, port):
-        self.game = TTNetGame(self, 1)
+        self.game = NetGame(self, 1)
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)      
         self.connect((server, port))

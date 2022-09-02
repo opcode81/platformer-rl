@@ -5,6 +5,7 @@ import sys, os
 from objects import ControlledAvatar, Ghost
 from level import Level
 from camera import ChasingCamera
+from remote_control import RemoteActionEventGenerator, RemoteAction
 from renderer import GameRenderer
 from collections import defaultdict
 from events import EventHandler
@@ -12,21 +13,24 @@ from debug import log
 import config
 
 
-class TTGame(EventHandler):
+class Game(EventHandler):
     width = 800
     height = 600
     FRAME_RATE = 60
     SCORE_EXIT = 100
-    SCORE_TICK = -1/60
+    SCORE_PER_SECOND = -1
+    SCORE_TICK = SCORE_PER_SECOND/FRAME_RATE
     SCORE_DEATH = -1000
 
-    def __init__(self, levelFilename=None):
+    def __init__(self, levelFilename=None, enableRendering=True):
         log(f"Initialising game (level={levelFilename})")
         EventHandler.__init__(self, self)
         
         pygame.init()
+        self.enableRendering = enableRendering
+        self.renderer = None
         self.timer = pygame.time.Clock()
-        self.screen = pygame.display.set_mode((TTGame.width, TTGame.height))
+        self.screen = pygame.display.set_mode((Game.width, Game.height))
         pygame.display.set_caption("Tempus Temporis [prototype]")
         self.width, self.height = self.screen.get_size()
 
@@ -56,7 +60,8 @@ class TTGame(EventHandler):
         self.renderer.update(self)
 
     def draw(self):
-        self.renderer.draw()
+        if self.enableRendering:
+            self.renderer.draw()
 
     def createAvatars(self):        
         self.avatar = ControlledAvatar(self.level.playerInitialPos, self)
@@ -104,9 +109,6 @@ class TTGame(EventHandler):
     def resetLevel(self):
         self.startLevel(self.level)
     
-    def nextLevel(self):
-        self.resetLevel() # TODO
-    
     def addEventHandler(self, eventHandler):
         self.eventHandlers.append(eventHandler)
     
@@ -124,12 +126,32 @@ class TTGame(EventHandler):
 
     def mainLoop(self):
         self.gameOver = False
-        while not self.gameOver:            
-            self.processDataStreams()              
+        while not self.gameOver:
+            self.processDataStreams()
             self.update()
             self.draw()
             self.timer.tick(self.FRAME_RATE)
-            
+        log(f"the game is over, score={self.score}")
+
+    def mainLoopRemoteControlledTest(self):
+        self.gameOver = False
+        frame = 0
+        actionGen = RemoteActionEventGenerator()
+        while not self.gameOver:
+            if frame <= 10:
+                action = RemoteAction.RIGHT
+            elif frame <= 20:
+                action = RemoteAction.RIGHT_UP
+            else:
+                action = RemoteAction.RIGHT
+            events = actionGen.actionToEvents(action)
+            for e in events:
+                pygame.event.post(e)
+            self.processDataStreams()
+            self.update()
+            self.draw()
+            self.timer.tick(self.FRAME_RATE)
+            frame += 1
         log(f"the game is over, score={self.score}")
     
 
@@ -140,5 +162,6 @@ if __name__ == '__main__':
     else:
         levelFilename = argv[0]
     if not os.path.exists("assets"): os.chdir("..")
-    game = TTGame(levelFilename=levelFilename)
-    game.mainLoop()
+    game = Game(levelFilename=levelFilename)
+    #game.mainLoop()
+    game.mainLoopRemoteControlledTest()

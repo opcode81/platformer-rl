@@ -13,7 +13,7 @@ from .motion import *
 from .anim import *
 
 if TYPE_CHECKING:
-    from game import TTGame
+    from game import Game
 
 
 class Timeline(object):
@@ -90,7 +90,7 @@ class ControlledAvatar(Avatar):
             self.motion.run(status)
 
     def onKeyDown(self, event):
-        game: TTGame = self.game
+        game: Game = self.game
         self.triggerMotion(event, True)
         if event.key == K_SPACE:               
             if len(self.collide(game.level.portals)) > 0:
