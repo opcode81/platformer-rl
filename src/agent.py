@@ -29,6 +29,7 @@ class Env(gym.Env):
         gridContextSize = (2 * self.GRID_CONTEXT + 1) * (2 * self.GRID_CONTEXT + 1)
         obsSize = 2 * gridContextSize
         obsSize += 2  # exit direction
+        obsSize += 2  # avatar position offset in cell
         self.observation_space = gym.spaces.Box(-1.0, 1.0, shape=[obsSize])
         self.actions = list(RemoteAction)
         self.action_space = gym.spaces.Discrete(len(self.actions))
@@ -49,10 +50,11 @@ class Env(gym.Env):
         grid = level.grid
         avatarCell = grid.gridCellForPos(av.pos)
         exitDirection = np.sign(exit.pos - av.pos)
+        positionOffsetInCell = grid.offsetInCell(av.pos)
         surroundingGrid = grid.surroundingGrid(avatarCell, self.GRID_CONTEXT, self.GRID_CONTEXT, self.GRID_CONTEXT, self.GRID_CONTEXT)
         gridPlatform: np.ndarray = (surroundingGrid == "X").astype(float)
         gridExit: np.ndarray = (surroundingGrid == "E").astype(float)
-        obs = np.concatenate([gridPlatform.flatten(), gridExit.flatten(), exitDirection])
+        obs = np.concatenate([gridPlatform.flatten(), gridExit.flatten(), exitDirection, positionOffsetInCell])
         return obs
 
     def step(self, actionIdx: int):

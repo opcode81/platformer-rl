@@ -85,6 +85,7 @@ class Game(EventHandler):
             level = self.level
             cell = level.grid.gridCellForPos(self.avatar.pos)
             log(f"Grid cell: {cell}")
+            log(f"Offset on cell: {level.grid.offsetInCell(self.avatar.pos)}")
             log(self.level.grid.surroundingGrid(cell, 5, 5, 5, 5))
 
     def createAvatars(self):        
@@ -158,6 +159,8 @@ class Game(EventHandler):
 
     def mainLoop(self):
         while self.running:
+            if self.gameOver:
+                self.resetLevel()
             self.processDataStreams()
             self.update()
             self.draw()

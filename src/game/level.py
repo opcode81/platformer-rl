@@ -113,9 +113,16 @@ class Grid:
         arr = pos // self.cellDim
         return arr.astype(np.int)
 
-    def posRelativeToCellCentre(self, pos: Tuple[float, float], cell: Tuple[int, int]) -> Tuple[float, float]:
-        cellCentrePos = self.cellRect(*cell).center
-        return pos[0] - cellCentrePos[0], pos[1] - cellCentrePos[1]
+    def gridCellPos(self, cell: np.ndarray) -> np.ndarray:
+        return cell * self.cellDim
+
+    def offsetInCell(self, pos: np.ndarray) -> np.ndarray:
+        """
+        :param pos: a position
+        :return: the offset of the position within its cell, normalised such (0.5, 0.5) means exactly in the centre and (0, 0) and (1, 1)
+            are the boundaries where the next cells begin
+        """
+        return (pos % self.cellDim) / self.cellDim
 
     def iterGameObjects(self) -> Iterator[GameObject]:
         for y in range(self.grid.shape[0]):
