@@ -1,15 +1,18 @@
+import os
+import sys
+
 import pygame
-from pygame.locals import K_ESCAPE
 from pygame import sprite
-import sys, os
-from objects import ControlledAvatar, Ghost
-from level import Level
-from camera import ChasingCamera
-from remote_control import RemoteActionEventGenerator, RemoteAction
-from renderer import GameRenderer
-from events import EventHandler
-from debug import log
-import config
+from pygame.locals import K_ESCAPE
+
+from . import config
+from .camera import ChasingCamera
+from .debug import log
+from .events import EventHandler
+from .level import Level
+from .objects import ControlledAvatar, Ghost
+from .remote_control import RemoteActionEventGenerator, RemoteAction
+from .renderer import GameRenderer
 
 
 class Game(EventHandler):
@@ -152,15 +155,3 @@ class Game(EventHandler):
             self.timer.tick(self.FRAME_RATE)
             frame += 1
         log(f"the game is over, score={self.score}")
-    
-
-if __name__ == '__main__':
-    argv = sys.argv[1:]
-    if len(argv) == 0:
-        levelFilename = None
-    else:
-        levelFilename = argv[0]
-    if not os.path.exists("assets"): os.chdir("../..")
-    game = Game(levelFilename=levelFilename)
-    #game.mainLoop()
-    game.mainLoopRemoteControlledTest()

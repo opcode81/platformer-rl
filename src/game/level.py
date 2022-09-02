@@ -1,12 +1,15 @@
+import sys
 import pickle
 from typing import Iterator
 
 import numpy as np
 
-from objects import *
-import levelformat
+from .objects import *
+from . import levelformat
 from pygame import sprite
-from renderer import LayeredRenderer
+from .renderer import LayeredRenderer
+
+sys.modules["levelformat"] = levelformat  # for backward compatibility with pickled files
 
 
 class Grid:
