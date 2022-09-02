@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import Optional
 
 import pygame
 from pygame import sprite
@@ -9,7 +10,7 @@ from . import config
 from .camera import ChasingCamera
 from .debug import log
 from .events import EventHandler
-from .level import Level
+from .level import Level, loadLevel, GridLevel
 from .objects import ControlledAvatar, Ghost
 from .remote_control import RemoteActionEventGenerator, RemoteAction
 from .renderer import GameRenderer
@@ -31,8 +32,10 @@ class Game(EventHandler):
         pygame.init()
         self.enableRendering = enableRendering
         self.renderer = None
+        self.level: Optional[Level] = None
         self.timer = pygame.time.Clock()
         self.screen = pygame.display.set_mode((Game.width, Game.height))
+        self.gameOver = False
         pygame.display.set_caption("Tempus Temporis [prototype]")
         self.width, self.height = self.screen.get_size()
 
@@ -45,7 +48,7 @@ class Game(EventHandler):
         level = None
         for inFile in files:
             if inFile == levelFilename:
-                level = Level(os.path.join(path, inFile), self)
+                level = loadLevel(os.path.join(path, inFile), self)
 
         if level is None:
             print(f"No level selected; the following filenames were found: {files}")
@@ -61,9 +64,18 @@ class Game(EventHandler):
         self.camera.update(self)
         self.renderer.update(self)
 
+        #self._logState()
+
     def draw(self):
         if self.enableRendering:
             self.renderer.draw()
+
+    def _logState(self):
+        if isinstance(self.level, GridLevel):
+            level = self.level
+            cell = level.grid.gridCellForPos(self.avatar.pos)
+            log(f"Grid cell: {cell}")
+            log(self.level.grid.surroundingGrid(cell, 5, 5, 5, 5))
 
     def createAvatars(self):        
         self.avatar = ControlledAvatar(self.level.playerInitialPos, self)
@@ -72,16 +84,17 @@ class Game(EventHandler):
     def startLevel(self, level):
         log("starting level")
         self.eventHandlers = []        
-        
+
         self.level = level
         self.level.reset()
-        
+
         self.createAvatars()
 
         self.renderer = GameRenderer(self)
         self.renderer.add(self.level)
         self.renderer.add(self.avatars)
 
+        self.gameOver = False
         self.score = 0
         self.time = 0
         
