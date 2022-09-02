@@ -2,6 +2,7 @@ import os
 import sys
 from typing import Optional
 
+import numpy as np
 import pygame
 from pygame import sprite
 from pygame.locals import K_ESCAPE
@@ -24,6 +25,8 @@ class Game(EventHandler):
     SCORE_PER_SECOND = -1
     SCORE_TICK = SCORE_PER_SECOND/FRAME_RATE
     SCORE_DEATH = -1000
+    SCORE_EXIT_CLOSENESS_PER_STEP = 10
+    EXIT_CLOSENESS_STEP_SIZE = 40
 
     def __init__(self, levelFilename=None, enableRendering=True):
         log(f"Initialising game (level={levelFilename})")
@@ -61,6 +64,12 @@ class Game(EventHandler):
         self.time += 1
         self.score += self.SCORE_TICK
 
+        exitDistanceSteps = self.existDistanceSteps()
+        if exitDistanceSteps < self.bestExitDistanceSteps:
+            stepsCloser = self.bestExitDistanceSteps - exitDistanceSteps
+            self.score += self.SCORE_EXIT_CLOSENESS_PER_STEP * stepsCloser
+            self.bestExitDistanceSteps = exitDistanceSteps
+
         self.camera.update(self)
         self.renderer.update(self)
 
@@ -97,8 +106,14 @@ class Game(EventHandler):
         self.gameOver = False
         self.score = 0
         self.time = 0
+        self.bestExitDistanceSteps = self.existDistanceSteps()
         
         self.camera = ChasingCamera(self)
+
+    def existDistanceSteps(self):
+        offs = self.avatar.pos - self.level.exits.sprites()[0].pos
+        dist = np.linalg.norm(offs)
+        return dist / self.EXIT_CLOSENESS_STEP_SIZE
     
     def travelBackInTime(self):
         # add ghost
