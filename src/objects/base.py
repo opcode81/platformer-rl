@@ -1,7 +1,6 @@
 from pygame import sprite
 from events import EventHandler
 import numpy
-import objects
 
 
 class GameObject(sprite.Sprite, EventHandler):

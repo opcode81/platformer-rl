@@ -22,6 +22,6 @@ class Logger(object):
         enabled, settings = self.stack[-1]
         if not enabled: return
         (module, line, f, _) = traceback.extract_stack()[-2]
-        print '%10s:%-5d> %s%s' % (os.path.split(module)[-1].replace(".py", ""), line, ' '*self.indent, ' '.join([str(x) for x in messages]))
+        print('%10s:%-5d> %s%s' % (os.path.split(module)[-1].replace(".py", ""), line, ' '*self.indent, ' '.join([str(x) for x in messages])))
 
 log = Logger()

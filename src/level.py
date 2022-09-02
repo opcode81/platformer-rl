@@ -1,8 +1,9 @@
-import cPickle as pickle
+import pickle
 from objects import *
 import levelformat
 from pygame import sprite
 from renderer import LayeredRenderer
+
 
 class Level(LayeredRenderer):
     def __init__(self, levelFile, game):
@@ -14,7 +15,7 @@ class Level(LayeredRenderer):
         self.portals = self.addGroup(Portal)
         
         if levelFile[-2:] == ".p": # old level format
-            levelFormat = pickle.load(open(levelFile,'rb'))
+            levelFormat = pickle.load(open(levelFile, 'rb'))
             self.playerInitialPos = levelFormat.player.rect.center
             
             self.add(*[Platform(p, game) for p in levelFormat.platforms])
@@ -22,7 +23,7 @@ class Level(LayeredRenderer):
             self.add(self.exit)
             self.add(*[Portal(p, game) for p in levelFormat.buttons])
         else:
-            d = pickle.load(file(levelFile, "rb"))
+            d = pickle.load(open(levelFile, "rb"))
             for o in d["objects"]:
                 gameObject = GameObject.fromSaveFormat(o, game)
                 self.add(gameObject)
@@ -44,7 +45,7 @@ class Level(LayeredRenderer):
             
         for object in objects:
             haveGroup = False
-            for cls, group in self.groups.iteritems():
+            for cls, group in self.groups.items():
                 if isinstance(object, cls):
                     group.add(object)
                     haveGroup = True

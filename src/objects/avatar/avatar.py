@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import pygame
 import sys, os
 import renderer
@@ -6,8 +8,8 @@ from pygame.locals import *
 from objects import DynamicObject, GameObject
 import numpy
 from debug import log
-from motion import *
-from anim import *
+from .motion import *
+from .anim import *
 
 
 class Timeline(object):
@@ -51,8 +53,8 @@ class Avatar(DynamicObject):
         
         self.counter = 0
 
-    def setLocation(self,(x,y)):
-        self.pos = numpy.array([x,y], dtype=numpy.float64)
+    def setLocation(self, pos: Tuple[float, float]):
+        self.pos = numpy.array(pos, dtype=numpy.float64)
         
     def reset(self):
         self.pos = self.initialpos

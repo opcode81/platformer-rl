@@ -280,7 +280,7 @@ class MeatBoyMotion(object):
                 
         # determine if there are supporting platforms
         r = self.rect.move(0, 1)
-        supportingPlatforms = filter(lambda p: r.colliderect(p.wrect), game.level.platforms)
+        supportingPlatforms = list(filter(lambda p: r.colliderect(p.wrect), game.level.platforms))
         if len(supportingPlatforms) > 0:
             self.onGround = True
             #log("  on supporting plane with top = %s" % supportingPlatforms[0].wrect.top)
@@ -289,11 +289,11 @@ class MeatBoyMotion(object):
         self.onLeftWall = self.onRightWall = False
         if not self.onGround:
             r = self.rect.move(-1, 0)
-            if len(filter(lambda p: r.colliderect(p.wrect), game.level.platforms)) > 0:
+            if len(list(filter(lambda p: r.colliderect(p.wrect), game.level.platforms))) > 0:
                 self.onLeftWall = True
             else:
                 r = self.rect.move(1, 0)
-                if len(filter(lambda p: r.colliderect(p.wrect), game.level.platforms)) > 0:
+                if len(list(filter(lambda p: r.colliderect(p.wrect), game.level.platforms))) > 0:
                     self.onRightWall = True
         self.onWall = self.onRightWall or self.onLeftWall
         

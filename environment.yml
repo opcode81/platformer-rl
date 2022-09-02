@@ -1,0 +1,10 @@
+name: platformer-rl
+channels:
+  - defaults
+dependencies:
+  - pip
+  - python=3.9
+  - pip:
+    - numpy==1.23.2
+    - pygame==2.1.2
+
