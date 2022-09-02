@@ -74,7 +74,7 @@ class TTGame(EventHandler):
         
         # replace avatar
         self.avatar.kill()        
-        self.avatar = Avatar(self.level.playerInitialPos, self)
+        self.avatar = ControlledAvatar(self.level.playerInitialPos, self)
         self.avatars.add(self.avatar)
         self.renderer.add(self.avatar) # TODO should this be necessary?
         

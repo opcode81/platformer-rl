@@ -1,6 +1,6 @@
 import numpy
 from debug import log
-
+import pygame
 
 class SillyOldMotion(object):
     def __init__(self, avatar):

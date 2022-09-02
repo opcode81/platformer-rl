@@ -136,7 +136,7 @@ class ControlledAvatar(Avatar):
 
 class Ghost(GameObject):    
     def __init__(self, player):
-        GameObject.__init__(self, player.game)
+        super().__init__(player.__dict__, player.game)
         surface = pygame.Surface((30,30))
         surface.fill((0,50,100))
         surface.set_alpha(100)
