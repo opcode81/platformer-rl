@@ -15,9 +15,13 @@ import config
 class TTGame(EventHandler):
     width = 800
     height = 600
+    FRAME_RATE = 60
+    SCORE_EXIT = 100
+    SCORE_TICK = -1/60
+    SCORE_DEATH = -1000
 
-    def __init__(self):
-        log("initialising game")
+    def __init__(self, levelFilename=None):
+        log(f"Initialising game (level={levelFilename})")
         EventHandler.__init__(self, self)
         
         pygame.init()
@@ -27,18 +31,26 @@ class TTGame(EventHandler):
         self.width, self.height = self.screen.get_size()
 
         path = config.levelsPath
-        self.levels = []
         self.states = set()
+
         files = os.listdir(path)
         files.sort()
-        for inFile in files:
-            self.levels.append(Level(os.path.join(path,inFile), self))
 
-        self.startLevel(self.levels[0])
+        level = None
+        for inFile in files:
+            if inFile == levelFilename:
+                level = Level(os.path.join(path, inFile), self)
+
+        if level is None:
+            print(f"No level selected; the following filenames were found: {files}")
+            sys.exit(1)
+
+        self.startLevel(level)
 
     def update(self):
         # advance time
         self.time += 1
+        self.score += self.SCORE_TICK
 
         self.camera.update(self)
         self.renderer.update(self)
@@ -62,7 +74,8 @@ class TTGame(EventHandler):
         self.renderer = GameRenderer(self)
         self.renderer.add(self.level)
         self.renderer.add(self.avatars)
-       
+
+        self.score = 0
         self.time = 0
         
         self.camera = ChasingCamera(self)
@@ -79,13 +92,16 @@ class TTGame(EventHandler):
         self.renderer.add(self.avatar) # TODO should this be necessary?
         
         self.time = 0
+
+    def playerDies(self):
+        log("player has died")
+        self.resetLevel()
+
+    def playerExitsLevel(self):
+        self.score += self.SCORE_EXIT
+        self.gameOver = True
         
     def resetLevel(self):
-        #self.time = 0
-        #self.level.reset()
-        #for player in self.players.sprites():
-        #    player.reset()
-        
         self.startLevel(self.level)
     
     def nextLevel(self):
@@ -112,12 +128,17 @@ class TTGame(EventHandler):
             self.processDataStreams()              
             self.update()
             self.draw()
-            self.timer.tick(70)
+            self.timer.tick(self.FRAME_RATE)
             
-        log("the game is over")
+        log(f"the game is over, score={self.score}")
     
 
 if __name__ == '__main__':
+    argv = sys.argv[1:]
+    if len(argv) == 0:
+        levelFilename = None
+    else:
+        levelFilename = argv[0]
     if not os.path.exists("assets"): os.chdir("..")
-    game = TTGame()
+    game = TTGame(levelFilename=levelFilename)
     game.mainLoop()

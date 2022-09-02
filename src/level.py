@@ -1,12 +1,56 @@
 import pickle
+from typing import Iterator
+
+import numpy as np
+
 from objects import *
 import levelformat
 from pygame import sprite
 from renderer import LayeredRenderer
 
 
+class Grid:
+    """
+    Represents a grid-based level layout defined through a text file
+    """
+    def __init__(self, path: str, game, cellDim: float = 40):
+        with open(path, "r") as f:
+            lines = [l.rstrip() for l in f.readlines()]
+        ydim = len(lines)
+        xdim = max(*[len(l) for l in lines])
+        grid = np.empty((xdim, ydim), dtype=np.object)
+        playerInitialPos = None
+        for y, line in enumerate(lines):
+            for x, char in enumerate(line):
+                grid[x, y] = char
+                if char == "P":
+                    playerInitialPos = (x, y)
+        self.grid = grid
+        self.playerInitialGridPos = playerInitialPos
+        self.cellDim = cellDim
+        self.game = game
+
+    def cellRect(self, x, y) -> Rect:
+        return Rect(x * self.cellDim, y * self.cellDim, self.cellDim, self.cellDim)
+
+    def iterGameObjects(self) -> Iterator[GameObject]:
+        for x in range(self.grid.shape[0]):
+            for y in range(self.grid.shape[1]):
+                c = self.grid[x, y]
+                if c == "P":
+                    continue
+                elif c == "X":
+                    yield Platform({"wrect": self.cellRect(x, y), "visible": True}, self.game)
+                elif c == "E":
+                    yield Exit({"wrect": self.cellRect(x, y)}, self.game, size=(self.cellDim, self.cellDim))
+
+    def playerInitialPos(self) :
+        cellRect = self.cellRect(*self.playerInitialGridPos)
+        return cellRect.center
+
+
 class Level(LayeredRenderer):
-    def __init__(self, levelFile, game):
+    def __init__(self, levelFile: str, game):
         LayeredRenderer.__init__(self)
 
         self.groups = {}
@@ -17,11 +61,14 @@ class Level(LayeredRenderer):
         if levelFile[-2:] == ".p": # old level format
             levelFormat = pickle.load(open(levelFile, 'rb'))
             self.playerInitialPos = levelFormat.player.rect.center
-            
             self.add(*[Platform(p, game) for p in levelFormat.platforms])
-            self.exit = Exit(levelFormat.exit, game)
-            self.add(self.exit)
+            self.add(Exit(levelFormat.exit, game))
             self.add(*[Portal(p, game) for p in levelFormat.buttons])
+        elif levelFile.endswith(".grid"):
+            grid = Grid(levelFile, game)
+            self.playerInitialPos = grid.playerInitialPos()
+            for o in grid.iterGameObjects():
+                self.add(o)
         else:
             d = pickle.load(open(levelFile, "rb"))
             for o in d["objects"]:
@@ -38,7 +85,7 @@ class Level(LayeredRenderer):
         for group in (self.platforms, self.portals):
             for sprite in group.sprites():
                 sprite.reset()
-        self.exit.reset()
+        #self.exit.reset()
     
     def add(self, *objects):
         LayeredRenderer.add(self, *objects)

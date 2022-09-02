@@ -1,15 +1,19 @@
-from typing import Tuple
+from typing import Tuple, TYPE_CHECKING
 
 import pygame
 import sys, os
 import renderer
 from collections import defaultdict
 from pygame.locals import *
+
 from objects import DynamicObject, GameObject
 import numpy
 from debug import log
 from .motion import *
 from .anim import *
+
+if TYPE_CHECKING:
+    from game import TTGame
 
 
 class Timeline(object):
@@ -86,20 +90,22 @@ class ControlledAvatar(Avatar):
             self.motion.run(status)
 
     def onKeyDown(self, event):
-        game = self.game
+        game: TTGame = self.game
         self.triggerMotion(event, True)
         if event.key == K_SPACE:               
             if len(self.collide(game.level.portals)) > 0:
                 game.travelBackInTime()
-    
+        if event.key in (K_w, K_UP, K_PERIOD):
+            if len(self.collide(game.level.exits)) > 0:
+                game.playerExitsLevel()
+
     def onKeyUp(self, event):
         self.triggerMotion(event, False)
         
     def update(self, game):
         # check for death
         if self.motion.vel[1] > 250:
-            log("player has died")
-            game.resetLevel() # TODO replace with event?
+            game.playerDies()
             return
         
         # update position

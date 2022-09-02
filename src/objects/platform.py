@@ -1,7 +1,7 @@
 import pygame
+
 from objects import GameObject
-import os
-import numpy
+
 
 class Platform(GameObject):
     def __init__(self, d, game):
@@ -16,6 +16,8 @@ class Platform(GameObject):
             GameObject.__init__(self, d, game)
             rect = d["wrect"]
             self.setSize(rect.width, rect.height)
+            self.default = self.visible = True
+            self.group = None
             
     def setSize(self, width, height):
         self.image = pygame.Surface((width, height)).convert()
