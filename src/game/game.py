@@ -38,6 +38,7 @@ class Game(EventHandler):
         self.level: Optional[Level] = None
         self.timer = pygame.time.Clock()
         self.screen = pygame.display.set_mode((Game.width, Game.height))
+        self.running = True
         self.gameOver = False
         pygame.display.set_caption("Tempus Temporis [prototype]")
         self.width, self.height = self.screen.get_size()
@@ -130,7 +131,8 @@ class Game(EventHandler):
 
     def playerDies(self):
         log("player has died")
-        self.resetLevel()
+        self.score += self.SCORE_DEATH
+        self.gameOver = True
 
     def playerExitsLevel(self):
         self.score += self.SCORE_EXIT
@@ -149,14 +151,13 @@ class Game(EventHandler):
         for event in pygame.event.get():
             #print event
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == K_ESCAPE):
-                self.gameOver = True
+                self.running = False
                 break
             for eh in self.eventHandlers:
                 eh.handleEvent(event)
 
     def mainLoop(self):
-        self.gameOver = False
-        while not self.gameOver:
+        while self.running:
             self.processDataStreams()
             self.update()
             self.draw()
@@ -164,10 +165,9 @@ class Game(EventHandler):
         log(f"the game is over, score={self.score}")
 
     def mainLoopRemoteControlledTest(self):
-        self.gameOver = False
         frame = 0
         actionGen = RemoteActionEventGenerator()
-        while not self.gameOver:
+        while self.running:
             if frame <= 10:
                 action = RemoteAction.RIGHT
             elif frame <= 20:
