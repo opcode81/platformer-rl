@@ -10,12 +10,10 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 import pygame
 
 from game import Game
+from game.debug import log
 from game.level import GridLevel
 from game.objects import ControlledAvatar
 from game.remote_control import RemoteAction, RemoteActionEventGenerator
-
-log = logging.getLogger(__name__)
-
 
 AGENT_STORAGE_PATH = os.path.join("models")
 
@@ -30,6 +28,7 @@ class Env(gym.Env):
         self.game = game
         gridContextSize = (2 * self.GRID_CONTEXT + 1) * (2 * self.GRID_CONTEXT + 1)
         obsSize = 2 * gridContextSize
+        obsSize += 2  # exit direction
         self.observation_space = gym.spaces.Box(-1.0, 1.0, shape=[obsSize])
         self.actions = list(RemoteAction)
         self.action_space = gym.spaces.Discrete(len(self.actions))
@@ -46,12 +45,14 @@ class Env(gym.Env):
         if not isinstance(self.game.level, GridLevel):
             raise ValueError(f"Only levels of type {GridLevel} are supported")
         level: GridLevel = self.game.level
+        exit = level.exits.sprites()[0]
         grid = level.grid
         avatarCell = grid.gridCellForPos(av.pos)
+        exitDirection = np.sign(exit.pos - av.pos)
         surroundingGrid = grid.surroundingGrid(avatarCell, self.GRID_CONTEXT, self.GRID_CONTEXT, self.GRID_CONTEXT, self.GRID_CONTEXT)
         gridPlatform: np.ndarray = (surroundingGrid == "X").astype(float)
         gridExit: np.ndarray = (surroundingGrid == "E").astype(float)
-        obs = np.concatenate([gridPlatform.flatten(), gridExit.flatten()])
+        obs = np.concatenate([gridPlatform.flatten(), gridExit.flatten(), exitDirection])
         return obs
 
     def step(self, actionIdx: int):
@@ -69,6 +70,8 @@ class Env(gym.Env):
         reward = self.game.score - self.prevScore
         self.prevScore = self.game.score
         done = self.game.gameOver
+        if done:
+            log(f"Episode ended with score={self.game.score}")
         info = {}
         return self.get_obs(), reward, done, info
 
