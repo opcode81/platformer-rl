@@ -1,5 +1,5 @@
 from pygame import sprite
-from events import EventHandler
+from game.events import EventHandler
 import numpy
 
 

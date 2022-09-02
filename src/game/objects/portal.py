@@ -1,5 +1,4 @@
-from levelformat import Button as bf
-from objects import GameObject, DynamicObject
+from game.objects import GameObject
 import pygame
 import os
 import numpy

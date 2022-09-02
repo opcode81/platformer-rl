@@ -1,5 +1,5 @@
 import numpy
-from debug import log
+from game.debug import log
 import pygame
 
 class SillyOldMotion(object):

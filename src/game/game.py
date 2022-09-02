@@ -7,7 +7,6 @@ from level import Level
 from camera import ChasingCamera
 from remote_control import RemoteActionEventGenerator, RemoteAction
 from renderer import GameRenderer
-from collections import defaultdict
 from events import EventHandler
 from debug import log
 import config
@@ -161,7 +160,7 @@ if __name__ == '__main__':
         levelFilename = None
     else:
         levelFilename = argv[0]
-    if not os.path.exists("assets"): os.chdir("..")
+    if not os.path.exists("assets"): os.chdir("../..")
     game = Game(levelFilename=levelFilename)
     #game.mainLoop()
     game.mainLoopRemoteControlledTest()

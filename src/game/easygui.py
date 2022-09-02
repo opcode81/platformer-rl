@@ -1752,7 +1752,7 @@ def filesavebox(msg=None
 #
 #-------------------------------------------------------------------
 def fileboxSetup(default,filetypes):
-    if not default: default = os.path.join(".","*")
+    if not default: default = os.path.join("..", "*")
     initialdir, initialfile = os.path.split(default)
     if not initialdir : initialdir  = "."
     if not initialfile: initialfile = "*"

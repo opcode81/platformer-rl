@@ -1,19 +1,14 @@
 from typing import Tuple, TYPE_CHECKING
 
-import pygame
-import sys, os
-import renderer
 from collections import defaultdict
 from pygame.locals import *
 
-from objects import DynamicObject, GameObject
-import numpy
-from debug import log
+from game.objects import DynamicObject, GameObject
 from .motion import *
 from .anim import *
 
 if TYPE_CHECKING:
-    from game import Game
+    from game.game import Game
 
 
 class Timeline(object):

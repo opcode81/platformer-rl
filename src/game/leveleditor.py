@@ -1,6 +1,6 @@
 import pygame
 import cPickle as pickle
-import sys, os
+import os
 from pygame.locals import *
 import easygui as eg
 import levelformat 

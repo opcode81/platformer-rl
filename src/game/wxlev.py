@@ -6,7 +6,6 @@ import sys
 import numpy
 from debug import log
 import levelformat as lf
-from pprint import pprint
 import pickle
 
 # deferred pygame imports
@@ -27,8 +26,6 @@ class SDLPanel(wx.Panel):
         os.environ['SDL_VIDEODRIVER'] = 'windib'       
         import pygame # this has to happen after setting the environment variables.
         import level
-        import renderer
-        import objects
         pygame.display.init()
         screen = pygame.display.set_mode(tplSize)
         
@@ -188,7 +185,7 @@ class LevelEditor(wx.Frame):
         self.viewer.activeTool = "platform"
 
     def onOpen(self, event):
-        dlg = wx.FileDialog(self, "Choose a file", os.path.join(".", "assets", "levels"), "", "*.lvl", wx.OPEN)
+        dlg = wx.FileDialog(self, "Choose a file", os.path.join("..", "assets", "levels"), "", "*.lvl", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             path = os.path.join(dlg.GetDirectory(), dlg.GetFilename())                        
             dlg.Destroy()
@@ -197,7 +194,7 @@ class LevelEditor(wx.Frame):
             self.viewer.setLevel(level.Level(path, self.viewer))
     
     def onSave(self, event):
-        dlg = wx.FileDialog(self, "Choose a file", os.path.join(".", "assets", "levels"), "", "*.lvl", wx.SAVE)
+        dlg = wx.FileDialog(self, "Choose a file", os.path.join("..", "assets", "levels"), "", "*.lvl", wx.SAVE)
         if dlg.ShowModal() == wx.ID_OK:
             path = os.path.join(dlg.GetDirectory(), dlg.GetFilename())                        
             dlg.Destroy()

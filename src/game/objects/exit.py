@@ -1,10 +1,8 @@
 from typing import Optional, Tuple
 
-from levelformat import Exit as e
 import os
 import pygame
-from objects import GameObject
-import numpy
+from game.objects import GameObject
 
 
 class Exit(GameObject):

@@ -1,6 +1,6 @@
 import pygame
 
-from objects import GameObject
+from game.objects import GameObject
 
 
 class Platform(GameObject):
