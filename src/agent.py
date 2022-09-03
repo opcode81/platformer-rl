@@ -52,7 +52,8 @@ class Env(gym.Env):
         grid = level.grid
         avatarCell = grid.gridCellForPos(av.pos)
         exitVector = exit.pos - av.pos
-        exitDirection = exitVector / np.linalg.norm(exitVector)
+        exitVectorNorm = np.linalg.norm(exitVector)
+        exitDirection = np.zeros(2) if exitVectorNorm == 0 else exitVector / exitVectorNorm
         positionOffsetInCell = grid.offsetInCell(av.pos)
         motionScale = 25
         acc = av.motion.accelerationVector() / motionScale
