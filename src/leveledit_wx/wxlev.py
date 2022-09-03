@@ -1,23 +1,23 @@
 import wx
 import os
-import thread
+from threading import Thread
 import traceback
 import sys
 import numpy
-from debug import log
-import levelformat as lf
+from game.debug import log
+from leveledit_redo import levelformat as lf
 import pickle
 
 # deferred pygame imports
 global pygame
-global level
 global renderer
+global level
 global objects
 
 
 class SDLPanel(wx.Panel):
     def __init__(self,parent,ID,tplSize):
-        global pygame, level, renderer, objects
+        global pygame, renderer, level, objects
         wx.Panel.__init__(self, parent, ID, size=tplSize)
         self.Fit()
         
@@ -25,18 +25,22 @@ class SDLPanel(wx.Panel):
         os.environ['SDL_WINDOWID'] = str(self.GetHandle())
         os.environ['SDL_VIDEODRIVER'] = 'windib'       
         import pygame # this has to happen after setting the environment variables.
-        import level
+        from game import renderer as i_renderer, level as i_level, objects as i_objects
+        renderer = i_renderer
+        level = i_level
+        objects = i_objects
         pygame.display.init()
         screen = pygame.display.set_mode(tplSize)
         
         # initialize level viewer
         self.screen = screen
         self.levelViewer = LevelViewer(screen, tplSize)
-        self.levelViewer.setLevel(level.Level(os.path.join("assets", "levels", "0.p"), self.levelViewer))
-        #self.levelViewer.setLevel(level.Level(os.path.join("assets", "levels", "test.lvl"), self.levelViewer))
-        
+        from game.level import loadLevel
+        self.levelViewer.setLevel(loadLevel(os.path.join("assets", "levels", "0.p"), self.levelViewer))
+
         # start pygame thread
-        thread.start_new_thread(self.levelViewer.mainLoop, ())
+        thread = Thread(target=self.levelViewer.mainLoop, args=())
+        thread.start()
 
     def __del__(self):
         self.levelViewer.running = False
@@ -63,7 +67,7 @@ class LevelViewer(object):
     def setLevel(self, level):
         self.renderer = renderer.GameRenderer(self)
         self.level = level
-        self.camera = Camera(self.level.playerInitialPos, self)        
+        self.camera = Camera(self.level.playerInitialPos, self)
         self.renderer.add(self.level)
         self.avatars = pygame.sprite.Group()
         
@@ -106,7 +110,7 @@ class LevelViewer(object):
             
         except:
             e, v, tb = sys.exc_info()
-            print v
+            print(v)
             traceback.print_tb(tb)
     
     def onRightMouseButtonDown(self, x, y):
@@ -114,7 +118,7 @@ class LevelViewer(object):
     
     def onLeftMouseButtonDown(self, x, y):
         if self.activeTool is None: # select object
-            matches = filter(lambda o: o.rect.collidepoint((x,y)), self.level.sprites())
+            matches = list(filter(lambda o: o.rect.collidepoint((x,y)), self.level.sprites()))
             if len(matches) > 0:
                 self.selectedObject = matches[0]
                 log("selected", self.selectedObject)
@@ -185,7 +189,7 @@ class LevelEditor(wx.Frame):
         self.viewer.activeTool = "platform"
 
     def onOpen(self, event):
-        dlg = wx.FileDialog(self, "Choose a file", os.path.join("..", "assets", "levels"), "", "*.lvl", wx.OPEN)
+        dlg = wx.FileDialog(self, "Choose a file", os.path.join("../..", "assets", "levels"), "", "*.lvl", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             path = os.path.join(dlg.GetDirectory(), dlg.GetFilename())                        
             dlg.Destroy()
@@ -194,15 +198,14 @@ class LevelEditor(wx.Frame):
             self.viewer.setLevel(level.Level(path, self.viewer))
     
     def onSave(self, event):
-        dlg = wx.FileDialog(self, "Choose a file", os.path.join("..", "assets", "levels"), "", "*.lvl", wx.SAVE)
+        dlg = wx.FileDialog(self, "Choose a file", os.path.join("../..", "assets", "levels"), "", "*.lvl", wx.SAVE)
         if dlg.ShowModal() == wx.ID_OK:
             path = os.path.join(dlg.GetDirectory(), dlg.GetFilename())                        
             dlg.Destroy()
             
             # save level
-            f = file(path, "wb")
-            pickle.dump(self.viewer.level.saveFormat(), f)
-            f.close()
+            with open(path, "wb") as f:
+                pickle.dump(self.viewer.level.saveFormat(), f)
 
     def onExit(self, event):
         pass
@@ -210,6 +213,6 @@ class LevelEditor(wx.Frame):
 
 if __name__ == '__main__':
     app = wx.PySimpleApp()
-    frame = LevelEditor(None, wx.ID_ANY, "pyTT Level Editor", (800,600))
+    frame = LevelEditor(None, wx.ID_ANY, "Level Editor", (800,600))
     frame.Show()
     app.MainLoop()

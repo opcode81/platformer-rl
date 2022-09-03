@@ -4,8 +4,9 @@ from typing import Iterator
 
 import numpy as np
 
+from leveledit_redo.levelformat import LevelFormat
 from .objects import *
-from . import levelformat
+from leveledit_redo import levelformat
 from pygame import sprite
 from .renderer import LayeredRenderer
 
@@ -53,11 +54,12 @@ class Level(LayeredRenderer):
 
 class LevelFromPickleV1(Level):
     """
-    Legacy level representation
+    Legacy level representation (based on mcdenhoed/redo)
     """
     def __init__(self, path, game):
         with open(path, "rb") as f:
             levelFormat = pickle.load(f)
+        levelFormat: LevelFormat
         playerInitialPos = levelFormat.player.rect.center
         super().__init__(playerInitialPos)
         self.add(*[Platform(p, game) for p in levelFormat.platforms])

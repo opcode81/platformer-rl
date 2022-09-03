@@ -1,9 +1,14 @@
+"""
+Legacy level editor (originally from mcdenhoed/redo)
+"""
+
 import pygame
-import cPickle as pickle
+import pickle
 import os
 from pygame.locals import *
-import easygui as eg
-import levelformat 
+from . import easygui as eg
+from . import levelformat
+
 
 class MyButton:
     """Button class based on the
@@ -28,8 +33,9 @@ class MyButton:
         text = font.render(self.msg, 1, (10,10,10))
         textpos = text.get_rect(center=self.rect.center)
         surface.blit(text, textpos)
+
     def do(self):
-        print "Impbement in subclasses"
+        print("Implement in subclasses")
 
 class RectButton(MyButton):
     def __init__(self, x, y, w, h, app):
@@ -38,7 +44,7 @@ class RectButton(MyButton):
         self.app = app
         self.msg = "Platform"
     def do(self):
-        SimpleUI.state['mode'] = 'rect'
+        LevelEditorUI.state['mode'] = 'rect'
         
 class PlayerButton(MyButton):
     def __init__(self, x, y, w, h, app):
@@ -46,7 +52,7 @@ class PlayerButton(MyButton):
         self.app = app
         self.msg = "Player"
     def do(self):
-        SimpleUI.state['mode'] = 'player'
+        LevelEditorUI.state['mode'] = 'player'
 
 class ExitButton(MyButton):
     def __init__(self, x, y, w, h, app):
@@ -54,7 +60,7 @@ class ExitButton(MyButton):
         self.app = app
         self.msg = "Exit"
     def do(self):
-        SimpleUI.state['mode'] = 'exit'
+        LevelEditorUI.state['mode'] = 'exit'
 
 class PortalButton(MyButton):
     def __init__(self, x, y, w, h, app):
@@ -62,7 +68,7 @@ class PortalButton(MyButton):
         self.app = app
         self.msg = "Time Portal"
     def do(self):
-        SimpleUI.state['mode'] = 'button'
+        LevelEditorUI.state['mode'] = 'button'
 
 class EmptyButton(MyButton):
     def __init__(self, x, y, w, h, app):
@@ -70,7 +76,7 @@ class EmptyButton(MyButton):
         self.app = app
         self.msg = "<EMPTY>"
     def do(self):
-        SimpleUI.state['mode'] = 'recorder'
+        LevelEditorUI.state['mode'] = 'recorder'
 
 class SaveButton(MyButton):
     def __init__(self, x, y, w, h, app):
@@ -96,7 +102,7 @@ class LoadButton(MyButton):
             level = pickle.load(open(os.path.join('assets', 'levels', self.filename + '.p'), 'rb'))
             self.app.gamePlayer, self.app.gameRecorders, self.app.gameButtons, self.app.gameRects, self.app.gameExit = level.player, level.recorders, level.buttons, level.platforms, level.exit
 
-class SimpleUI:
+class LevelEditorUI:
     state = {'mode' : 'none', 'clicked' : False}
     LAST = [0,0]
     CURRENT = [0,0]
@@ -110,7 +116,7 @@ class SimpleUI:
         pygame.display.set_caption("Simple UI")
         self.selected = None
         self.screen = pygame.display.set_mode((width,height))
-        self.screen.fill(SimpleUI.WHITE)
+        self.screen.fill(LevelEditorUI.WHITE)
         self.buttons = []
         self.addButton(RectButton(20, 20, 100, 50, self))
         self.addButton(PlayerButton(20, 90, 100, 50, self))
@@ -150,14 +156,14 @@ class SimpleUI:
                     if event.key == K_ESCAPE:
                         exit = True
                     if event.key == K_SPACE:
-                        SimpleUI.state['mode'] = 'move'
+                        LevelEditorUI.state['mode'] = 'move'
                     if event.key == K_LSHIFT:
-                        SimpleUI.state['mode'] = 'prop'
+                        LevelEditorUI.state['mode'] = 'prop'
                 elif event.type == KEYUP:
                     if event.key == K_SPACE:
-                        SimpleUI.state['mode'] = 'none'
+                        LevelEditorUI.state['mode'] = 'none'
                     if event.key == K_LSHIFT:
-                        SimpleUI.state['mode'] = 'none'
+                        LevelEditorUI.state['mode'] = 'none'
                         #SimpleUI.state['mode'] = SimpleUI.state['old']
                 elif event.type == MOUSEBUTTONDOWN:
                     self.handleMouseDown(pygame.mouse.get_pos())
@@ -167,22 +173,23 @@ class SimpleUI:
                     self.handleMouseMotion(pygame.mouse.get_pos())
             return exit
 
-    def handleMouseDown(self, (x, y)):
+    def handleMouseDown(self, pos):
+        x, y = pos
         but = False
-        SimpleUI.state['clicked'] = True
+        LevelEditorUI.state['clicked'] = True
         for button in self.buttons:
             if (button.containsPoint(x, y)):
                 button.do()
-                SimpleUI.state['clicked'] = False
+                LevelEditorUI.state['clicked'] = False
                 but = True
                 break
         for platform in self.gameRects:
             if platform.rect.collidepoint(x, y):
                 self.selected = platform.rect
-                if SimpleUI.state['mode'] is not 'prop': SimpleUI.state['mode'] = 'drag'
+                if LevelEditorUI.state['mode'] != 'prop': LevelEditorUI.state['mode'] = 'drag'
                 else:
                     platform.setBy = eg.enterbox('ButtonGroup to that sets this platform')
-                    print "set by"+platform.setBy+"yo"
+                    print("set by"+platform.setBy+"yo")
                     if eg.boolbox("Platform visible by default?", "One more thing", ["Yes", "No"]):
                         platform.visibleDefault = True
                     else:
@@ -192,63 +199,67 @@ class SimpleUI:
         for gbutton in self.gameButtons:
             if gbutton.rect.collidepoint(x,y):
                 self.selected = gbutton.rect
-                if SimpleUI.state['mode'] is not 'prop': SimpleUI.state['mode'] = 'drag'
+                if LevelEditorUI.state['mode'] != 'prop': LevelEditorUI.state['mode'] = 'drag'
                 else:
                     gbutton.sets = eg.enterbox('Object Group to set')
                 but = True
         for recorder in self.gameRecorders:
             if recorder.rect.collidepoint(x,y):
                 self.selected = recorder.rect
-                SimpleUI.state['mode'] = 'drag'
+                LevelEditorUI.state['mode'] = 'drag'
                 but = True
         if self.gamePlayer.rect.collidepoint(x,y):
             self.selected = self.gamePlayer.rect
-            SimpleUI.state['mode'] = 'drag'
+            LevelEditorUI.state['mode'] = 'drag'
             but = True
         elif self.gameExit.rect.collidepoint(x,y):
             self.selected = self.gameExit.rect
-            SimpleUI.state['mode'] = 'drag'
+            LevelEditorUI.state['mode'] = 'drag'
             but = True
         if not but:
-            if SimpleUI.state['mode'] == 'rect':
-                SimpleUI.LAST = [x,y]
-            if SimpleUI.state['mode'] == 'player':
+            if LevelEditorUI.state['mode'] == 'rect':
+                LevelEditorUI.LAST = [x,y]
+            if LevelEditorUI.state['mode'] == 'player':
                 self.gamePlayer.rect.center = (x,y)
-            if SimpleUI.state['mode'] == 'recorder':
+            if LevelEditorUI.state['mode'] == 'recorder':
                 temp = levelformat.Recorder(x,y)
                 temp.rect.center = (x,y)
                 self.gameRecorders.append(temp)
-            if SimpleUI.state['mode'] == 'button':
+            if LevelEditorUI.state['mode'] == 'button':
                 temp = levelformat.Button(x,y)
                 temp.rect.center = (x,y)
                 self.gameButtons.append(temp)
-            if SimpleUI.state['mode'] == 'exit':
+            if LevelEditorUI.state['mode'] == 'exit':
                 self.gameExit.rect.center = (x,y)
-            if SimpleUI.state['mode'] == 'move':
-                SimpleUI.LAST = [x,y]
+            if LevelEditorUI.state['mode'] == 'move':
+                LevelEditorUI.LAST = [x,y]
                              
-    def handleMouseUp(self, (x,y)):
-        if SimpleUI.state['mode'] == 'rect' and SimpleUI.state['clicked'] is True:
-           width, height = [a-b for a,b in zip([x,y], SimpleUI.LAST)]
-           temp = levelformat.Platform(SimpleUI.LAST[0], SimpleUI.LAST[1], width, height)
+    def handleMouseUp(self, pos):
+        x, y = pos
+        if LevelEditorUI.state['mode'] == 'rect' and LevelEditorUI.state['clicked'] is True:
+           width, height = [a-b for a,b in zip([x,y], LevelEditorUI.LAST)]
+           temp = levelformat.Platform(LevelEditorUI.LAST[0], LevelEditorUI.LAST[1], width, height)
            if temp.rect.width > 30 and temp.rect.height > 30:
                 self.gameRects.append(temp)
-        SimpleUI.state['clicked'] = False
+        LevelEditorUI.state['clicked'] = False
         self.selected = None
 
-    def handleMouseMotion(self, (x,y)):
-        if SimpleUI.state['clicked'] is True: 
-            xo,yo = [a-b for a,b in zip([x,y], SimpleUI.CURRENT)]
-            if SimpleUI.state['mode'] is 'move':
+    def handleMouseMotion(self, pos):
+        x, y = pos
+        if LevelEditorUI.state['clicked'] is True:
+            xo,yo = [a-b for a,b in zip([x,y], LevelEditorUI.CURRENT)]
+            if LevelEditorUI.state['mode'] == 'move':
                 self.moveEverything((xo,yo))
-            elif SimpleUI.state['mode'] is 'drag' and self.selected is not None:
+            elif LevelEditorUI.state['mode'] == 'drag' and self.selected is not None:
                 self.moveSomething((xo,yo))
-        SimpleUI.CURRENT = [x,y]
+        LevelEditorUI.CURRENT = [x,y]
             
-    def moveSomething(self, (x,y)):
+    def moveSomething(self, pos):
+        x, y = pos
         self.selected.move_ip(x,y)
 
-    def moveEverything(self, (x,y)):
+    def moveEverything(self, pos):
+        x, y = pos
         for gbutton in self.gameButtons:
             gbutton.rect.move_ip(x,y)
         for recorder in self.gameRecorders:
@@ -259,16 +270,16 @@ class SimpleUI:
         self.gameExit.rect.move_ip(x,y)
 
     def draw(self):
-        self.screen.fill(SimpleUI.WHITE)
-        if SimpleUI.state['mode'] == 'rect' and SimpleUI.state['clicked'] is True:
-            width = SimpleUI.CURRENT[0] - SimpleUI.LAST[0]
-            height = SimpleUI.CURRENT[1] - SimpleUI.LAST[1]
-            temp = pygame.Rect(SimpleUI.LAST, (width, height))
+        self.screen.fill(LevelEditorUI.WHITE)
+        if LevelEditorUI.state['mode'] == 'rect' and LevelEditorUI.state['clicked'] is True:
+            width = LevelEditorUI.CURRENT[0] - LevelEditorUI.LAST[0]
+            height = LevelEditorUI.CURRENT[1] - LevelEditorUI.LAST[1]
+            temp = pygame.Rect(LevelEditorUI.LAST, (width, height))
             temp.normalize()
             if temp.width > 30 and temp.height > 30:
-                pygame.draw.rect(self.screen, SimpleUI.GREEN, temp)
+                pygame.draw.rect(self.screen, LevelEditorUI.GREEN, temp)
             else:
-                pygame.draw.rect(self.screen, SimpleUI.RED, temp)
+                pygame.draw.rect(self.screen, LevelEditorUI.RED, temp)
         for gbutton in self.gameButtons:
             gbutton.draw(self.screen)
         for recorder in self.gameRecorders:
@@ -280,7 +291,3 @@ class SimpleUI:
         for button in self.buttons:
             button.draw(self.screen)
         pygame.display.update()
-            
-# Start the program
-if __name__ == '__main__':
-    SimpleUI().run()
