@@ -1,5 +1,6 @@
+from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Sequence, Iterable
+from typing import Sequence, Iterable, Optional
 
 import pygame
 
@@ -49,3 +50,20 @@ class RemoteActionEventGenerator:
 
     def actionToEvents(self, action: RemoteAction) -> list:
         return self.kb.update(action.getKeys())
+
+
+class RemoteController(ABC):
+    def __init__(self):
+        self.eventGen: Optional[RemoteActionEventGenerator] = None
+        self.reset()
+
+    @abstractmethod
+    def _chooseAction(self) -> RemoteAction:
+        pass
+
+    def generateEvents(self) -> list:
+        action = self._chooseAction()
+        return self.eventGen.actionToEvents(action)
+
+    def reset(self):
+        self.eventGen = RemoteActionEventGenerator()

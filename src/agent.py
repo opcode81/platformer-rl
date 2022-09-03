@@ -13,7 +13,7 @@ from game import Game
 from game.debug import log
 from game.level import GridLevel
 from game.objects import ControlledAvatar
-from game.remote_control import RemoteAction, RemoteActionEventGenerator
+from game.remote_control import RemoteAction, RemoteActionEventGenerator, RemoteController
 
 AGENT_STORAGE_PATH = os.path.join("models")
 
@@ -84,6 +84,18 @@ class Env(gym.Env):
         pass
 
 
+class AgentRemoteController(RemoteController):
+    def __init__(self, agent: "DeepRLAgent", deterministic=True):
+        super().__init__()
+        self.agent = agent
+        self.deterministic = deterministic
+
+    def _chooseAction(self) -> RemoteAction:
+        obs = self.agent.env.get_obs()
+        actionIdx, _ = self.agent.model.predict(obs, deterministic=self.deterministic)
+        return self.agent.env.actions[actionIdx]
+
+
 class DeepRLAgent(ABC):
     def __init__(self, game: Game, load: bool, filebasename: str, useFallbackForForbiddenActions=False):
         """
@@ -94,6 +106,7 @@ class DeepRLAgent(ABC):
             This option is useful for agents that have not been trained a lot; it will allow them to achieve better
             performance.
         """
+        super().__init__()
         self.useFallbackForForbiddenActions = useFallbackForForbiddenActions
         self.env = Env(game)
         os.makedirs(AGENT_STORAGE_PATH, exist_ok=True)
@@ -111,6 +124,9 @@ class DeepRLAgent(ABC):
 
     def save(self):
         self.model.save(self.path)
+
+    def createRemoteController(self, deterministic=True) -> AgentRemoteController:
+        return AgentRemoteController(self, deterministic=deterministic)
 
 
 class A2CAgent(DeepRLAgent):

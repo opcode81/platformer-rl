@@ -13,7 +13,7 @@ from .debug import log
 from .events import EventHandler
 from .level import Level, loadLevel, GridLevel
 from .objects import ControlledAvatar, Ghost
-from .remote_control import RemoteActionEventGenerator, RemoteAction
+from .remote_control import RemoteActionEventGenerator, RemoteAction, RemoteController
 from .renderer import GameRenderer
 
 
@@ -40,8 +40,13 @@ class Game(EventHandler):
         self.screen = pygame.display.set_mode((Game.width, Game.height))
         self.running = True
         self.gameOver = False
+        self.remoteController: Optional[RemoteController] = None
         pygame.display.set_caption("Tempus Temporis [prototype]")
         self.width, self.height = self.screen.get_size()
+
+        # only for logging purposes
+        self.maxAbsVel = np.array([0,0])
+        self.maxAbsAcc = np.array([0,0])
 
         path = config.levelsPath
         self.states = set()
@@ -81,12 +86,17 @@ class Game(EventHandler):
             self.renderer.draw()
 
     def _logState(self):
+        vel = self.avatar.motion.velocityVector()
+        acc = self.avatar.motion.accelerationVector()
+        self.maxAbsVel = np.maximum(np.abs(vel), self.maxAbsVel)
+        self.maxAbsAcc = np.maximum(np.abs(acc), self.maxAbsAcc)
+        log(f"vel={vel}, acc={acc}, max(abs(vel))={self.maxAbsVel}, max(abs(acc))={self.maxAbsAcc}")
         if isinstance(self.level, GridLevel):
             level = self.level
             cell = level.grid.gridCellForPos(self.avatar.pos)
             log(f"Grid cell: {cell}")
             log(f"Offset on cell: {level.grid.offsetInCell(self.avatar.pos)}")
-            log(self.level.grid.surroundingGrid(cell, 5, 5, 5, 5))
+            log(f"Surroundings:\n{self.level.grid.surroundingGrid(cell, 5, 5, 5, 5)}")
 
     def createAvatars(self):        
         self.avatar = ControlledAvatar(self.level.playerInitialPos, self)
@@ -111,6 +121,9 @@ class Game(EventHandler):
         self.bestExitDistanceSteps = self.existDistanceSteps()
         
         self.camera = ChasingCamera(self)
+
+        if self.remoteController is not None:
+            self.remoteController.reset()
 
     def existDistanceSteps(self):
         offs = self.avatar.pos - self.level.exits.sprites()[0].pos
@@ -149,6 +162,10 @@ class Game(EventHandler):
         self.eventHandlers.remove(eventHandler)
     
     def processDataStreams(self):
+        if self.remoteController is not None:
+            for e in self.remoteController.generateEvents():
+                pygame.event.post(e)
+
         for event in pygame.event.get():
             #print event
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == K_ESCAPE):

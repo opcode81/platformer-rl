@@ -1,6 +1,6 @@
-import os
 import sys
 
+from agent import PPOAgent
 from game.game import Game
 
 if __name__ == '__main__':
@@ -9,6 +9,10 @@ if __name__ == '__main__':
         levelFilename = None
     else:
         levelFilename = argv[0]
+
     game = Game(levelFilename=levelFilename)
+
+    agent = PPOAgent(game, load=True)
+    game.remoteController = agent.createRemoteController(deterministic=False)
+
     game.mainLoop()
-    #game.mainLoopRemoteControlledTest()
