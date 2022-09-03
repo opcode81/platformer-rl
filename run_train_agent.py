@@ -15,7 +15,7 @@ if __name__ == '__main__':
     game = Game("test2.grid", enableRendering=False)
 
     #agent = A2CAgent(game)
-    agent = PPOAgent(game)
+    agent = PPOAgent(game, load=True, suffix=750000)
     #agent = A2CAgent(load=True)
 
     while True:

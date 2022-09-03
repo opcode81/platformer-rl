@@ -113,10 +113,14 @@ class DeepRLAgent(ABC):
         os.makedirs(AGENT_STORAGE_PATH, exist_ok=True)
         self.filebasename = filebasename
         self.defaultSuffix = suffix
-        self.model = self._createModel(self.env)
         self.totalTimeSteps = 0
+        self.model = self._createModel(self.env)
         if load:
-            self.model = self.model.load(self._path(suffix))
+            path = self._path(suffix)
+            log(f"Loading model from {path}")
+            env = self.model.env
+            self.model = self.model.load(path)
+            self.model.env = env
 
     @abstractmethod
     def _createModel(self, env: Env) -> BaseAlgorithm:
