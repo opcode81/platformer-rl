@@ -92,6 +92,7 @@ class SillyOldMotion(object):
 
 class MeatBoyMotion(object):
     def __init__(self, avatar):
+        self.debug = False
         self.avatar = avatar        
         
         self.velScale = 0.1
@@ -131,7 +132,8 @@ class MeatBoyMotion(object):
         return self.accScale * (self.acc + self.accGrav + self.accFriction)
     
     def update(self, game):
-        log.push(False)
+        debug = self.debug
+        log.push(debug)
         
         self.pos = self.avatar.pos.copy()
         self.rect = self.avatar.rect.copy()
@@ -151,11 +153,13 @@ class MeatBoyMotion(object):
         # process platform interaction, determining onGround
         self.processPlatformInteraction()
         log("after platform interaction, pos =", str(self.rect.midbottom))
+
+        if debug:
+            log("onGround: %s, onWall: %s, left: %s, right: %s, pos: %s" % (self.onGround, self.onWall, self.left, self.right, self.rect.midbottom))
         
-        log("onGround: %s, onWall: %s, left: %s, right: %s, pos: %s" % (self.onGround, self.onWall, self.left, self.right, self.rect.midbottom))
-        
-        log.push(indent=2)
-        log("vel: %s, acc: %s" % (self.vel, self.acc))
+        log.push(debug, indent=2)
+        if debug:
+            log("vel: %s, acc: %s" % (self.vel, self.acc))
         
         # update velocity and acceleration based on move actions
        
@@ -206,8 +210,9 @@ class MeatBoyMotion(object):
                 self.acc[0] = 0
             else:
                 self.acc[0] = self.oriented(self.airHorAcc)
-                
-        log("vel: %s, acc: %s" % (self.vel, self.acc))
+
+        if debug:
+            log("vel: %s, acc: %s" % (self.vel, self.acc))
         
         if abs(self.vel[0]) > maxHorVel:
             self.vel[0] = maxHorVel * numpy.sign(self.vel[0])
@@ -225,9 +230,8 @@ class MeatBoyMotion(object):
     def oriented(self, x):
         return x if self.right else -x
             
-
     def processPlatformInteraction(self):
-        log.push(True)
+        log.push(self.debug)
         
         game = self.avatar.game
         self.onGround = False
