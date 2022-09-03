@@ -1,9 +1,11 @@
 name: platformer-rl
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - pip
   - python=3.9
+  - stable-baselines3=1.4.0
   - pip:
     - numpy==1.23.2
     - pygame==2.1.2
