@@ -101,41 +101,49 @@ class AgentRemoteController(RemoteController):
 
 
 class DeepRLAgent(ABC):
-    def __init__(self, game: Game, load: bool, filebasename: str, useFallbackForForbiddenActions=False):
+    def __init__(self, game: Game, load: bool, filebasename: str, suffix=None):
         """
         :param load: whether to load a previously stored model
         :param filebasename: the base filename for storage
-        :param useFallbackForForbiddenActions: whether to use, in cases where the policy selects an inadmissible action,
-            the policy's probabilistic outputs to select a fallback action (the most probable admissible action).
-            This option is useful for agents that have not been trained a lot; it will allow them to achieve better
-            performance.
+        :param suffix: filename suffix
         """
         super().__init__()
-        self.useFallbackForForbiddenActions = useFallbackForForbiddenActions
         self.env = Env(game)
         os.makedirs(AGENT_STORAGE_PATH, exist_ok=True)
-        self.path = os.path.join(AGENT_STORAGE_PATH, f"{filebasename}.zip")
+        self.filebasename = filebasename
+        self.defaultSuffix = suffix
         self.model = self._createModel(self.env)
+        self.totalTimeSteps = 0
         if load:
-            self.model = self.model.load(self.path)
+            self.model = self.model.load(self._path(suffix))
 
     @abstractmethod
     def _createModel(self, env: Env) -> BaseAlgorithm:
         pass
 
-    def train(self, total_timesteps):
-        self.model.learn(total_timesteps=total_timesteps)
+    def _path(self, suffix):
+        filebasename = self.filebasename
+        suffix = suffix if suffix is not None else self.defaultSuffix
+        if suffix is not None:
+            filebasename += f"-{suffix}"
+        return os.path.join(AGENT_STORAGE_PATH, f"{filebasename}.zip")
 
-    def save(self):
-        self.model.save(self.path)
+    def train(self, steps):
+        self.model.learn(total_timesteps=steps)
+        self.totalTimeSteps += steps
+
+    def save(self, suffix=None):
+        path = self._path(suffix)
+        log(f"Saving agent to {path}")
+        self.model.save(path)
 
     def createRemoteController(self, deterministic=True) -> AgentRemoteController:
         return AgentRemoteController(self, deterministic=deterministic)
 
 
 class A2CAgent(DeepRLAgent):
-    def __init__(self, game, load=False, useFallbackForForbiddenActions=False):
-        super().__init__(game, load, "a2c", useFallbackForForbiddenActions=useFallbackForForbiddenActions)
+    def __init__(self, game, load=False, suffix=None):
+        super().__init__(game, load, "a2c", suffix=suffix)
 
     def _createModel(self, env) -> BaseAlgorithm:
         return A2C('MlpPolicy', env, verbose=1)
@@ -150,8 +158,8 @@ class DQNAgent(DeepRLAgent):
 
 
 class PPOAgent(DeepRLAgent):
-    def __init__(self, game, load=False):
-        super().__init__(game, load, "ppo")
+    def __init__(self, game, load=False, suffix=None):
+        super().__init__(game, load, "ppo", suffix=suffix)
 
     def _createModel(self, env) -> BaseAlgorithm:
         return PPO('MlpPolicy', env, verbose=1)
