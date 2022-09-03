@@ -52,8 +52,9 @@ class Env(gym.Env):
         avatarCell = grid.gridCellForPos(av.pos)
         exitDirection = np.sign(exit.pos - av.pos)
         positionOffsetInCell = grid.offsetInCell(av.pos)
-        acc = av.motion.accelerationVector() / 25
-        vel = av.motion.velocityVector() / 12
+        motionScale = 25
+        acc = av.motion.accelerationVector() / motionScale
+        vel = av.motion.velocityVector() / motionScale
         surroundingGrid = grid.surroundingGrid(avatarCell, self.GRID_CONTEXT, self.GRID_CONTEXT, self.GRID_CONTEXT, self.GRID_CONTEXT)
         gridPlatform: np.ndarray = (surroundingGrid == "X").astype(float)
         gridExit: np.ndarray = (surroundingGrid == "E").astype(float)
