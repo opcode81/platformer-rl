@@ -123,6 +123,12 @@ class MeatBoyMotion(object):
         
     def discretise(self, pos):
         return numpy.round(pos)
+
+    def velocityVector(self):
+        return self.vel * self.velScale
+
+    def accelerationVector(self):
+        return self.accScale * (self.acc + self.accGrav + self.accFriction)
     
     def update(self, game):
         log.push(False)
