@@ -1,16 +1,16 @@
+import asyncore
+import pickle
 import socket
 import sys
 import threading
-import pickle
-import wx
-import asyncore
-import time as t
-from game import Game
-from Queue import Queue
-from debug import log
-from renderer import SpriteGroup
-from objects.avatar import *
 import traceback
+from queue import Queue
+
+from debug import log
+from game import Game
+from game.objects import ControlledAvatar, Avatar
+from renderer import SpriteGroup
+
 
 class AccessProxy(object):
     def __init__(self, statement):
@@ -84,7 +84,7 @@ class NetGame(Game):
     
     def createAvatars(self):        
         self.avatars = SpriteGroup()
-        for i in xrange(2):
+        for i in range(2):
             if i == self.i:
                 avatar = self.avatar = ControlledAvatar(self.level.playerInitialPos, self)
             else:
@@ -218,16 +218,16 @@ if __name__=='__main__':
         game = client.game
     else:
         appName = "network.py"
-        print "\nTTNetGame\n\n"
-        print "usage:"
-        print "   server:  %s serve <port> [file]" % appName
-        print "   client:  %s connect <server> <port> [file]" % appName
+        print("\nTTNetGame\n\n")
+        print("usage:")
+        print("   server:  %s serve <port> [file]" % appName)
+        print("   client:  %s connect <server> <port> [file]" % appName)
         sys.exit(1)
     
     try:
         game.mainLoop()
     except:
         e, v, tb = sys.exc_info()
-        print v
+        print(v)
         traceback.print_tb(tb)
 
