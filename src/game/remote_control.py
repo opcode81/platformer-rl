@@ -28,6 +28,7 @@ class VirtualKeyboard:
 
 
 class RemoteAction(Enum):
+    NONE = "none"
     LEFT = "left"
     RIGHT = "right"
     UP = "up"
@@ -36,6 +37,7 @@ class RemoteAction(Enum):
 
     def getKeys(self):
         return {
+            RemoteAction.NONE: [],
             RemoteAction.LEFT: [pygame.K_LEFT],
             RemoteAction.RIGHT: [pygame.K_RIGHT],
             RemoteAction.UP: [pygame.K_UP],
