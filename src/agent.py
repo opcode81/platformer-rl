@@ -81,7 +81,7 @@ class Env(gym.Env):
         self.prevScore = self.game.score
         done = self.game.gameOver
         if done:
-            log(f"Episode ended with score={self.game.score}")
+            log(f"Episode ended after {self.game.time} with score={self.game.score}")
         info = {}
         return self.get_obs(), reward, done, info
 
@@ -113,7 +113,6 @@ class DeepRLAgent(ABC):
         os.makedirs(AGENT_STORAGE_PATH, exist_ok=True)
         self.filebasename = filebasename
         self.defaultSuffix = suffix
-        self.totalTimeSteps = 0
         self.model = self._createModel(self.env)
         if load:
             path = self._path(suffix)
@@ -121,6 +120,14 @@ class DeepRLAgent(ABC):
             env = self.model.env
             self.model = self.model.load(path)
             self.model.env = env
+            if not hasattr(self.model, "totalTimeSteps"):
+                self.model.totalTimeSteps = self.model._total_timesteps if type(suffix) != int else suffix
+        else:
+            self.model.totalTimeSteps = 0
+
+    @property
+    def totalTimeSteps(self):
+        return getattr(self.model, "totalTimeSteps")
 
     @abstractmethod
     def _createModel(self, env: Env) -> BaseAlgorithm:
@@ -135,7 +142,7 @@ class DeepRLAgent(ABC):
 
     def train(self, steps):
         self.model.learn(total_timesteps=steps)
-        self.totalTimeSteps += steps
+        self.model.totalTimeSteps += steps
 
     def save(self, suffix=None):
         path = self._path(suffix)
