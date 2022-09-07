@@ -4,15 +4,10 @@ from agent import PPOAgent
 from game.game import Game
 
 if __name__ == '__main__':
-    argv = sys.argv[1:]
-    if len(argv) == 0:
-        levelFilename = None
-    else:
-        levelFilename = argv[0]
+    levels = ["test.grid", "test2.grid", "test3.grid", "test4.grid"]
+    game = Game(levels)
 
-    game = Game(levelFilename=levelFilename)
-
-    agent = PPOAgent(game, load=True)
+    agent = PPOAgent(game, load=True, suffix="4750000")
     game.remoteController = agent.createRemoteController(deterministic=False)
 
     game.mainLoop()

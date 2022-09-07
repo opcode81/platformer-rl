@@ -1,6 +1,6 @@
 import os
-import sys
-from typing import Optional
+from enum import Enum
+from typing import Optional, Union, List
 
 import numpy as np
 import pygame
@@ -17,6 +17,15 @@ from .remote_control import RemoteActionEventGenerator, RemoteAction, RemoteCont
 from .renderer import GameRenderer
 
 
+class LevelStatus(Enum):
+    RUNNING = "running"
+    OVER_DEATH = "over_death"
+    OVER_EXIT = "over_exit"
+
+    def isOver(self):
+        return self in (self.OVER_EXIT, self.OVER_DEATH)
+
+
 class Game(EventHandler):
     width = 800
     height = 600
@@ -28,8 +37,8 @@ class Game(EventHandler):
     SCORE_EXIT_CLOSENESS_PER_STEP = 10
     EXIT_CLOSENESS_STEP_SIZE = 40
 
-    def __init__(self, levelFilename=None, enableRendering=True):
-        log(f"Initialising game (level={levelFilename})")
+    def __init__(self, levels: Union[Union[str, Level], List[Union[str, Level]]], enableRendering=True):
+        log(f"Initialising game")
         EventHandler.__init__(self, self)
         
         pygame.init()
@@ -38,8 +47,8 @@ class Game(EventHandler):
         self.level: Optional[Level] = None
         self.timer = pygame.time.Clock()
         self.screen = pygame.display.set_mode((Game.width, Game.height))
-        self.running = True
-        self.gameOver = False
+        self.isRunning = True
+        self.levelStatus = LevelStatus.RUNNING
         self.remoteController: Optional[RemoteController] = None
         pygame.display.set_caption("Tempus Temporis [prototype]")
         self.width, self.height = self.screen.get_size()
@@ -48,22 +57,21 @@ class Game(EventHandler):
         self.maxAbsVel = np.array([0,0])
         self.maxAbsAcc = np.array([0,0])
 
-        path = config.levelsPath
-        self.states = set()
-
-        files = os.listdir(path)
-        files.sort()
-
-        level = None
-        for inFile in files:
-            if inFile == levelFilename:
-                level = loadLevel(os.path.join(path, inFile), self)
-
-        if level is None:
-            print(f"No level selected; the following filenames were found: {files}")
-            sys.exit(1)
-
-        self.startLevel(level)
+        # load levels and start first level
+        if type(levels) != list:
+            levels = [levels]
+        for i in range(len(levels)):
+            if not isinstance(levels[i], Level):
+                if type(levels[i]) == str:
+                    path = os.path.join(config.levelsPath, levels[i])
+                    if not os.path.exists(path):
+                        raise ValueError(f"Level not found: {levels[i]} in {config.levelsPath}); Existing levels: {sorted(os.listdir(config.levelsPath))}")
+                    levels[i] = loadLevel(path, self)
+                else:
+                    raise ValueError(f"Invalid level {levels[i]}; must pass filename or Level instance")
+        self.levels = levels
+        self.levelIdx = 0
+        self.startLevel(levels[0])
 
     def update(self):
         # advance time
@@ -115,7 +123,7 @@ class Game(EventHandler):
         self.renderer.add(self.level)
         self.renderer.add(self.avatars)
 
-        self.gameOver = False
+        self.levelStatus = LevelStatus.RUNNING
         self.score = 0
         self.time = 0
         self.bestExitDistanceSteps = self.existDistanceSteps()
@@ -146,11 +154,11 @@ class Game(EventHandler):
     def playerDies(self):
         log("player has died")
         self.score += self.SCORE_DEATH
-        self.gameOver = True
+        self.levelStatus = LevelStatus.OVER_DEATH
 
     def playerExitsLevel(self):
         self.score += self.SCORE_EXIT
-        self.gameOver = True
+        self.levelStatus = LevelStatus.OVER_EXIT
         
     def resetLevel(self):
         self.startLevel(self.level)
@@ -167,27 +175,34 @@ class Game(EventHandler):
                 pygame.event.post(e)
 
         for event in pygame.event.get():
-            #print event
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == K_ESCAPE):
-                self.running = False
+                self.isRunning = False
                 break
             for eh in self.eventHandlers:
                 eh.handleEvent(event)
 
+    def checkLevelChange(self):
+        if self.levelStatus == LevelStatus.OVER_DEATH:
+            log(f"Level ended with death, score={self.score}; restarting level")
+            self.resetLevel()
+        elif self.levelStatus == LevelStatus.OVER_EXIT:
+            log(f"Level ended with success, score={self.score}")
+            self.levelIdx = (self.levelIdx + 1) % len(self.levels)
+            self.startLevel(self.levels[self.levelIdx])
+
     def mainLoop(self):
-        while self.running:
-            if self.gameOver:
-                self.resetLevel()
+        while self.isRunning:
+            self.checkLevelChange()
             self.processDataStreams()
             self.update()
             self.draw()
             self.timer.tick(self.FRAME_RATE)
-        log(f"the game is over, score={self.score}")
 
     def mainLoopRemoteControlledTest(self):
         frame = 0
         actionGen = RemoteActionEventGenerator()
-        while self.running:
+        while self.isRunning:
+            self.checkLevelChange()
             if frame <= 10:
                 action = RemoteAction.RIGHT
             elif frame <= 20:

@@ -1,10 +1,12 @@
 import logging
 import os
 from abc import ABC, abstractmethod
+from pprint import pprint
 from typing import Optional
 
 import gym
 import numpy as np
+from ray.rllib.algorithms import sac, ppo
 from stable_baselines3 import A2C, DQN, PPO
 from stable_baselines3.common.base_class import BaseAlgorithm
 import pygame
@@ -55,7 +57,7 @@ class Env(gym.Env):
         exitVectorNorm = np.linalg.norm(exitVector)
         exitDirection = np.zeros(2) if exitVectorNorm == 0 else exitVector / exitVectorNorm
         positionOffsetInCell = grid.offsetInCell(av.pos)
-        motionScale = 25
+        motionScale = 26
         acc = av.motion.accelerationVector() / motionScale
         vel = av.motion.velocityVector() / motionScale
         motionFlags = np.array([av.motion.onLeftWall, av.motion.onRightWall, av.motion.onGround]).astype(float)
@@ -79,7 +81,7 @@ class Env(gym.Env):
 
         reward = self.game.score - self.prevScore
         self.prevScore = self.game.score
-        done = self.game.gameOver
+        done = self.game.levelStatus.isOver()
         if done:
             log(f"Episode ended after {self.game.time} with score={self.game.score}")
         info = {}
@@ -101,18 +103,35 @@ class AgentRemoteController(RemoteController):
         return self.agent.env.actions[actionIdx]
 
 
-class DeepRLAgent(ABC):
-    def __init__(self, game: Game, load: bool, filebasename: str, suffix=None):
+class Agent(ABC):
+    def __init__(self, filebasename: str, suffix=None):
         """
         :param load: whether to load a previously stored model
         :param filebasename: the base filename for storage
         :param suffix: filename suffix
         """
         super().__init__()
-        self.env = Env(game)
         os.makedirs(AGENT_STORAGE_PATH, exist_ok=True)
         self.filebasename = filebasename
         self.defaultSuffix = suffix
+
+    def _path(self, suffix):
+        filebasename = self.filebasename
+        suffix = suffix if suffix is not None else self.defaultSuffix
+        if suffix is not None:
+            filebasename += f"-{suffix}"
+        return os.path.join(AGENT_STORAGE_PATH, f"{filebasename}.zip")
+
+
+class DeepRLAgent(Agent, ABC):
+    def __init__(self, game: Game, load: bool, filebasename: str, suffix=None):
+        """
+        :param load: whether to load a previously stored model
+        :param filebasename: the base filename for storage
+        :param suffix: filename suffix
+        """
+        super().__init__(filebasename, suffix=suffix)
+        self.env = Env(game)
         self.model = self._createModel(self.env)
         if load:
             path = self._path(suffix)
@@ -132,13 +151,6 @@ class DeepRLAgent(ABC):
     @abstractmethod
     def _createModel(self, env: Env) -> BaseAlgorithm:
         pass
-
-    def _path(self, suffix):
-        filebasename = self.filebasename
-        suffix = suffix if suffix is not None else self.defaultSuffix
-        if suffix is not None:
-            filebasename += f"-{suffix}"
-        return os.path.join(AGENT_STORAGE_PATH, f"{filebasename}.zip")
 
     def train(self, steps):
         self.model.learn(total_timesteps=steps)
@@ -177,4 +189,54 @@ class PPOAgent(DeepRLAgent):
         return PPO('MlpPolicy', env, verbose=1)
 
 
+class SACAgent(Agent):
+    def __init__(self, envCls, load: bool = False, suffix=None, pathElems=None):
+        """
+        :param load: whether to load a previously stored model
+        :param filebasename: the base filename for storage
+        :param suffix: filename suffix
+        """
+        super().__init__("sac", suffix=suffix)
+        os.makedirs(AGENT_STORAGE_PATH, exist_ok=True)
+        self.model = self._createModel(envCls)
+        if load:
+            if pathElems is None:
+                pathElems = []
+            path = self._path(*pathElems, suffix=suffix)
+            log(f"Loading checkpoint from {path}")
+            self.model.load_checkpoint(path)
 
+    @property
+    def totalTimeSteps(self):
+        return getattr(self.model, "totalTimeSteps")
+
+    def _createModel(self, envCls):
+        #config = ppo.DEFAULT_CONFIG.copy()
+        config = sac.DEFAULT_CONFIG.copy()
+        config["framework"] = "torch"
+        config["num_workers"] = 1
+        config["training_intensity"] = 0.1
+        #return ppo.PPO(config=config, env=envCls)
+        return sac.SAC(config=config, env=envCls)
+
+    def _path(self, *pathelems, suffix=None):
+        dirname = self.filebasename
+        suffix = suffix if suffix is not None else self.defaultSuffix
+        if suffix is not None:
+            dirname += f"-{suffix}"
+        return os.path.join(AGENT_STORAGE_PATH, dirname, *pathelems)
+
+    def train(self, steps):
+        for i in range(steps):
+            result = self.model.train()
+            pprint(result)
+            if i % 100 == 0:
+                self.save()
+
+    def save(self, suffix=None):
+        path = self._path(suffix=suffix)
+        log(f"Saving agent to {path}")
+        self.model.save(path)
+
+    def createRemoteController(self, deterministic=True) -> AgentRemoteController:
+        return AgentRemoteController(self, deterministic=deterministic)

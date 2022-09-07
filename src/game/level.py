@@ -113,7 +113,7 @@ class Grid:
 
     def gridCellForPos(self, pos: np.ndarray) -> np.ndarray:
         arr = pos // self.cellDim
-        return arr.astype(np.int)
+        return arr.astype(int)
 
     def gridCellPos(self, cell: np.ndarray) -> np.ndarray:
         return cell * self.cellDim
