@@ -6,7 +6,7 @@ log = logging.getLogger(__name__)
 
 
 def createGame():
-    return Game("holes.grid", enableRendering=True)
+    return Game(["test.grid", "test2.grid", "test3.grid", "test4.grid"], enableRendering=True)
 
 
 class EnvWrapper(Env):
@@ -20,9 +20,9 @@ if __name__ == '__main__':
     saveEveryNumTimeSteps = 250000
     enableRendering = True  # disable to increase learning speed (almost double)
 
-    #agent = A2CAgent(game)
-    #agent = PPOAgent(game, load=False, suffix=4750000)
-    agent = SACAgent(EnvWrapper, load=True, pathElems=["checkpoint_000501", "checkpoint-501"])
+    #agent = A2CAgent(createGame())
+    agent = PPOAgent(createGame(), load=False, suffix=4750000)
+    #agent = SACAgent(EnvWrapper, load=True, pathElems=["checkpoint_000501", "checkpoint-501"])
 
     while True:
         agent.train(saveEveryNumTimeSteps)
